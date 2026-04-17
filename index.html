@@ -427,7 +427,9 @@
                 };
 
                 onMounted(() => {
-                    fetch('shops.json')
+                    // 캐시 버스터 추가 (배포마다 다른 버전)
+                    const cacheBuster = '?v=' + Date.now();
+                    fetch('shops.json' + cacheBuster)
                         .then(response => response.json())
                         .then(data => {
                             shops.value = data.shops || [];
