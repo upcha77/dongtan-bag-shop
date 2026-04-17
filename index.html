@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>동탄 쓰레기봉투 판매점 찾기</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+            background: #f5f5f5;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        header h1 { font-size: 1.4rem; margin-bottom: 6px; }
+        header p { opacity: 0.9; font-size: 0.85rem; }
+        .filters {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .filter-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .filter-row:last-child { margin-bottom: 0; }
+        select, input {
+            flex: 1;
+            min-width: 100px;
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            background: white;
+        }
+        select:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .stats {
+            background: white;
+            padding: 12px 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .stats .count {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #667eea;
+        }
+        .stats .updated {
+            font-size: 0.75rem;
+            color: #888;
+        }
+        /* List Styles */
+        .shop-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .shop-card {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .shop-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        }
+        .shop-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+        .shop-name {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #333;
+        }
+        .shop-tags {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        .tag {
+            font-size: 0.7rem;
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+        .tag-dong { background: #e3f2fd; color: #1976d2; }
+        .tag-bag { background: #f3e5f5; color: #7b1fa2; }
+        .shop-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 0.85rem;
+            color: #555;
+        }
+        .info-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .icon {
+            width: 18px;
+            text-align: center;
+            color: #888;
+            font-size: 0.9rem;
+        }
+        .sale-date {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-left: auto;
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            background: #fff3e0;
+            color: #e65100;
+            border-radius: 20px;
+        }
+        .shop-actions {
+            margin-top: 10px;
+            display: flex;
+            gap: 8px;
+        }
+        .shop-actions a {
+            flex: 1;
+            padding: 8px;
+            background: #f5f5f5;
+            color: #667eea;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            text-align: center;
+            font-weight: 500;
+        }
+        .shop-actions a:hover {
+            background: #667eea;
+            color: white;
+        }
+        .no-results, .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: #888;
+        }
+        .loading-main {
+            color: #667eea;
+        }
+        @media (max-width: 600px) {
+            .container { padding: 15px; }
+            header h1 { font-size: 1.2rem; }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="container">
+            <header>
+                <h1>🏪 동탄 쓰레기봉투 판매점</h1>
+                <p>소각용 50L / 75L 판매점 정보</p>
+            </header>
+            
+            <div class="loading loading-main" v-if="loading">데이터 로딩 중...</div>
+            
+            <template v-else>
+                <div class="filters">
+                    <div class="filter-row">
+                        <select v-model="selectedDong">
+                            <option value="">📍 전체 동</option>
+                            <option v-for="dong in dongs" :key="dong" :value="dong">{{ dong }}</option>
+                        </select>
+                        <select v-model="selectedBag">
+                            <option value="">🛍️ 전체 봉투</option>
+                            <option v-for="bag in bags" :key="bag" :value="bag">{{ bag }}</option>
+                        </select>
+                    </div>
+                    <div class="filter-row">
+                        <input 
+                            type="text" 
+                            v-model="searchQuery" 
+                            placeholder="🔍 판매점명 또는 주소 검색..."
+                        >
+                    </div>
+                </div>
+                
+                <div class="stats">
+                    <span class="count">📋 {{ filteredShops.length }}개 판매점</span>
+                    <span class="updated">업데이트: {{ updatedAt }}</span>
+                </div>
+                
+                <!-- List View -->
+                <div class="shop-list" v-if="filteredShops.length > 0">
+                    <div 
+                        v-for="shop in filteredShops" 
+                        :key="shop.SHOP_NAME + shop.SAUP_ADDR" 
+                        class="shop-card"
+                    >
+                        <div class="shop-header">
+                            <span class="shop-name">{{ shop.SHOP_NAME }}</span>
+                            <div class="shop-tags">
+                                <span class="tag tag-dong">{{ shop.DONG }}</span>
+                                <span class="tag tag-bag">{{ shop.BAG_TYPE }}</span>
+                            </div>
+                        </div>
+                        <div class="shop-info">
+                            <div class="info-row">
+                                <span class="icon">📍</span>
+                                <span>{{ shop.SAUP_ADDR }}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="icon">📞</span>
+                                <span>{{ shop.SAUP_PHONE || '-' }}</span>
+                                <span class="sale-date">
+                                    📅 {{ shop.SALE_DATE_FMT }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="shop-actions">
+                            <a :href="getMapLink(shop)" target="_blank">🗺️ 지도 보기</a>
+                            <a :href="getNaviLink(shop)" target="_blank">🚗 길찾기</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="no-results" v-else>
+                    <p>😅 검색 결과가 없습니다</p>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, computed, onMounted } = Vue;
+        
+        createApp({
+            setup() {
+                const shops = ref([]);
+                const loading = ref(true);
+                const selectedDong = ref('');
+                const selectedBag = ref('');
+                const searchQuery = ref('');
+                const updatedAt = ref('');
+                
+                const dongs = ['동탄1동', '동탄2동', '동탄3동', '동탄4동', '동탄5동', '동탄6동', '동탄7동'];
+                const bags = ['소각용 50L', '소각용 75L'];
+                
+                const filteredShops = computed(() => {
+                    return shops.value.filter(shop => {
+                        const matchDong = !selectedDong.value || shop.DONG === selectedDong.value;
+                        const matchBag = !selectedBag.value || shop.BAG_TYPE === selectedBag.value;
+                        const query = searchQuery.value.toLowerCase();
+                        const matchSearch = !query || 
+                            (shop.SHOP_NAME && shop.SHOP_NAME.toLowerCase().includes(query)) ||
+                            (shop.SAUP_ADDR && shop.SAUP_ADDR.toLowerCase().includes(query));
+                        return matchDong && matchBag && matchSearch;
+                    });
+                });
+                
+                // Get map link for a shop
+                const getMapLink = (shop) => {
+                    if (shop.LAT && shop.LNG) {
+                        return `https://www.google.com/maps?q=${shop.LAT},${shop.LNG}`;
+                    }
+                    return `https://www.google.com/maps/search/${encodeURIComponent(shop.SAUP_ADDR)}`;
+                };
+                
+                // Get navigation link for a shop
+                const getNaviLink = (shop) => {
+                    if (shop.LAT && shop.LNG) {
+                        return `https://www.google.com/maps/dir/?api=1&destination=${shop.LAT},${shop.LNG}`;
+                    }
+                    return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(shop.SAUP_ADDR)}`;
+                };
+                
+                onMounted(() => {
+                    fetch('shops.json')
+                        .then(response => response.json())
+                        .then(data => {
+                            shops.value = data.shops || [];
+                            updatedAt.value = data.updated_at || '';
+                            loading.value = false;
+                        })
+                        .catch(error => {
+                            console.error('데이터 로드 실패:', error);
+                            loading.value = false;
+                        });
+                });
+                
+                return {
+                    shops,
+                    loading,
+                    selectedDong,
+                    selectedBag,
+                    searchQuery,
+                    dongs,
+                    bags,
+                    filteredShops,
+                    updatedAt,
+                    getMapLink,
+                    getNaviLink
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
