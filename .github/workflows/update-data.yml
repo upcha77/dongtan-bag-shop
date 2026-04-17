@@ -130,7 +130,7 @@ shops_data = {
     "shops": unique_shops
 }
 
-with open('public/shops.json', 'w', encoding='utf-8') as f:
+with open('shops.json', 'w', encoding='utf-8') as f:
     json.dump(shops_data, f, ensure_ascii=False, indent=2)
 
 print(f"\n총 {len(unique_shops)}개 판매점 저장 완료")
@@ -146,4 +146,4 @@ EOF
     - name: Log update
       run: |
         echo "데이터 갱신 완료: $(date)"
-        echo "총 판매점: $(cat public/shops.json | grep -o '"total_count": [0-9]*' | grep -o '[0-9]*')"
+        echo "총 판매점: $(cat shops.json | grep -o '"total_count": [0-9]*' | grep -o '[0-9]*')"
