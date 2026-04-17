@@ -222,27 +222,6 @@
         .loading-main {
             color: #667eea;
         }
-        .map-type-toggle {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 10px;
-        }
-        .map-type-toggle button {
-            flex: 1;
-            padding: 8px 12px;
-            border: 2px solid #e0e0e0;
-            background: white;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .map-type-toggle button.active {
-            background: #ffcd00;
-            border-color: #ffcd00;
-            color: #3d1e1e;
-            font-weight: 600;
-        }
         @media (max-width: 600px) {
             .container { padding: 15px; }
             header h1 { font-size: 1.2rem; }
@@ -258,8 +237,10 @@
                 <p class="subtitle">소각용 50L / 75L 판매점 정보</p>
                 <div class="info-box">
                     📊 <strong>화성시청</strong>에서 제공하는 데이터를 <strong>2시간 간격</strong>으로 업데이트하고 있습니다.<br>
+                    🕐 데이터 업데이트 시간: <strong>06:00 ~ 24:00</strong> (2시간마다 자동 갱신)<br>
+                    📍 지역 대상: <strong>동탄1동 ~ 동탄9동</strong> (혹시 나오지 않는 동은 관련 데이터가 없는 것입니다)<br>
                     ⚠️ 이 정보는 <strong>재고 수량이 아닌, 최근 판매된 지점</strong>에 대한 정보입니다.<br>
-                    📍 데이터 출처: <a href="https://61.251.29.212/Gbms_Map/select_map.jsp?attr=hwasung" target="_blank">화성시 쓰레기봉투 판매점 안내 시스템</a>
+                    🔗 데이터 출처: <a href="https://61.251.29.212/Gbms_Map/select_map.jsp?attr=hwasung" target="_blank">화성시 쓰레기봉투 판매점 안내 시스템</a>
                 </div>
             </header>
 
@@ -283,20 +264,6 @@
 
                 <!-- Map Type Toggle -->
                 <div class="filters">
-                    <div class="map-type-toggle">
-                        <button
-                            :class="{ active: mapType === 'google' }"
-                            @click="mapType = 'google'"
-                        >
-                            🗺️ Google 지도
-                        </button>
-                        <button
-                            :class="{ active: mapType === 'kakao' }"
-                            @click="mapType = 'kakao'"
-                        >
-                            💛 카카오맵
-                        </button>
-                    </div>
                     <div class="filter-row">
                         <select v-model="selectedDong">
                             <option value="">📍 전체 동</option>
@@ -372,8 +339,7 @@
                 const selectedDong = ref('');
                 const selectedBag = ref('');
                 const searchQuery = ref('');
-                const selectedDateRange = ref('all');
-                const mapType = ref('google');
+                const selectedDateRange = ref('today');
                 const updatedAt = ref('');
 
                 const dongs = ['동탄1동', '동탄2동', '동탄3동', '동탄4동', '동탄5동', '동탄6동', '동탄7동'];
@@ -428,36 +394,22 @@
                     });
                 });
 
-                // Get map link for a shop
+                // Get map link for a shop - Kakao Map only
                 const getMapLink = (shop) => {
-                    if (mapType.value === 'kakao') {
-                        // Kakao Map external link
-                        if (shop.LAT && shop.LNG) {
-                            return `https://map.kakao.com/link/map/${encodeURIComponent(shop.SHOP_NAME)},${shop.LAT},${shop.LNG}`;
-                        }
-                        return `https://map.kakao.com/link/search/${encodeURIComponent(shop.SAUP_ADDR)}`;
-                    }
-                    // Google Maps
+                    // Kakao Map external link
                     if (shop.LAT && shop.LNG) {
-                        return `https://www.google.com/maps?q=${shop.LAT},${shop.LNG}`;
+                        return `https://map.kakao.com/link/map/${encodeURIComponent(shop.SHOP_NAME)},${shop.LAT},${shop.LNG}`;
                     }
-                    return `https://www.google.com/maps/search/${encodeURIComponent(shop.SAUP_ADDR)}`;
+                    return `https://map.kakao.com/link/search/${encodeURIComponent(shop.SAUP_ADDR)}`;
                 };
 
-                // Get navigation link for a shop
+                // Get navigation link for a shop - Kakao Map only
                 const getNaviLink = (shop) => {
-                    if (mapType.value === 'kakao') {
-                        // Kakao Map navigation link
-                        if (shop.LAT && shop.LNG) {
-                            return `https://map.kakao.com/link/to/${encodeURIComponent(shop.SHOP_NAME)},${shop.LAT},${shop.LNG}`;
-                        }
-                        return `https://map.kakao.com/link/search/${encodeURIComponent(shop.SAUP_ADDR)}`;
-                    }
-                    // Google Maps navigation
+                    // Kakao Map navigation link
                     if (shop.LAT && shop.LNG) {
-                        return `https://www.google.com/maps/dir/?api=1&destination=${shop.LAT},${shop.LNG}`;
+                        return `https://map.kakao.com/link/to/${encodeURIComponent(shop.SHOP_NAME)},${shop.LAT},${shop.LNG}`;
                     }
-                    return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(shop.SAUP_ADDR)}`;
+                    return `https://map.kakao.com/link/search/${encodeURIComponent(shop.SAUP_ADDR)}`;
                 };
 
                 onMounted(() => {
@@ -481,7 +433,6 @@
                     selectedBag,
                     searchQuery,
                     selectedDateRange,
-                    mapType,
                     dongs,
                     bags,
                     dateOptions,
