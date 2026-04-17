@@ -87,11 +87,11 @@ def main():
             print(f"{dong_name} + {bag_name}: {len(shops)}개")
             all_shops.extend(shops)
 
-    # 중복 제거
+    # 중복 제거 - 상점명+주소+봉투타입으로 유니크 (방식 A: 봉투 타입별 분리)
     seen = set()
     unique_shops = []
     for shop in all_shops:
-        key = f"{shop.get('SHOP_NAME', '')}_{shop.get('SAUP_ADDR', '')}"
+        key = f"{shop.get('SHOP_NAME', '')}_{shop.get('SAUP_ADDR', '')}_{shop.get('BAG_TYPE', '')}"
         if key not in seen:
             seen.add(key)
             unique_shops.append(shop)
