@@ -299,7 +299,7 @@
                             <span class="shop-name">{{ shop.SHOP_NAME }}</span>
                             <div class="shop-tags">
                                 <span class="tag tag-dong">{{ shop.DONG }}</span>
-                                <span class="tag tag-bag">{{ shop.BAG_TYPE }}</span>
+                                <span class="tag tag-bag">{{ shop.BAG_TYPES.join(', ') }}</span>
                             </div>
                         </div>
                         <div class="shop-info">
@@ -384,7 +384,8 @@
                 const filteredShops = computed(() => {
                     return shops.value.filter(shop => {
                         const matchDong = !selectedDong.value || shop.DONG === selectedDong.value;
-                        const matchBag = !selectedBag.value || shop.BAG_TYPE === selectedBag.value;
+                        // 방식 B: BAG_TYPES 배열에 선택한 봉투 타입이 포함되어 있는지 체크
+                        const matchBag = !selectedBag.value || (shop.BAG_TYPES && shop.BAG_TYPES.includes(selectedBag.value));
                         const matchDate = isWithinDateRange(shop.SALE_DATE_FMT, selectedDateRange.value);
                         const query = searchQuery.value.toLowerCase();
                         const matchSearch = !query ||

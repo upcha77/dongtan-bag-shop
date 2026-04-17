@@ -5,6 +5,7 @@ import re
 import json
 import sys
 from datetime import datetime
+from collections import defaultdict
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -87,28 +88,83 @@ def main():
             print(f"{dong_name} + {bag_name}: {len(shops)}개")
             all_shops.extend(shops)
 
-    # 중복 제거 - 상점명+주소+봉투타입으로 유니크 (방식 A: 봉투 타입별 분리)
-    seen = set()
-    unique_shops = []
+    # 방식 B: 상점 기준으로 그룹화, 봉투 타입은 배열로 저장
+    shop_groups = defaultdict(lambda: {
+        'SHOP_NAME': '',
+        'SAUP_ADDR': '',
+        'SAUP_PHONE': '',
+        'SALE_DATE_FMT': '',
+        'SALE_DATE_RAW': '',
+        'LAT': 0,
+        'LNG': 0,
+        'DONG': '',
+        'BAG_TYPES': [],  # 봉투 타입 배열
+        'SOURCES': []  # 원본 데이터 저장 (날짜 비교용)
+    })
+    
     for shop in all_shops:
-        key = f"{shop.get('SHOP_NAME', '')}_{shop.get('SAUP_ADDR', '')}_{shop.get('BAG_TYPE', '')}"
-        if key not in seen:
-            seen.add(key)
-            unique_shops.append(shop)
+        key = f"{shop.get('SHOP_NAME', '')}_{shop.get('SAUP_ADDR', '')}"
+        group = shop_groups[key]
+        
+        # 기본 정보 설정 (처음만)
+        if not group['SHOP_NAME']:
+            group['SHOP_NAME'] = shop.get('SHOP_NAME', '')
+            group['SAUP_ADDR'] = shop.get('SAUP_ADDR', '')
+            group['SAUP_PHONE'] = shop.get('SAUP_PHONE', '')
+            group['LAT'] = shop.get('LAT', 0)
+            group['LNG'] = shop.get('LNG', 0)
+            group['DONG'] = shop.get('DONG', '')
+        
+        # 봉투 타입 추가
+        bag_type = shop.get('BAG_TYPE', '')
+        if bag_type and bag_type not in group['BAG_TYPES']:
+            group['BAG_TYPES'].append(bag_type)
+        
+        # 날짜 저장 (최신 날짜 선택용)
+        sale_date = shop.get('SALE_DATE', '')
+        if sale_date:
+            group['SOURCES'].append({
+                'date': sale_date,
+                'date_fmt': shop.get('SALE_DATE_FMT', '-'),
+                'bag_type': bag_type
+            })
+    
+    # 각 그룹에서 최신 판매일 선택
+    merged_shops = []
+    for key, group in shop_groups.items():
+        if group['SOURCES']:
+            # 최신 날짜 찾기
+            latest = max(group['SOURCES'], key=lambda x: x['date'])
+            group['SALE_DATE_FMT'] = latest['date_fmt']
+            group['SALE_DATE'] = latest['date']
+        else:
+            group['SALE_DATE_FMT'] = '-'
+            group['SALE_DATE'] = ''
+        
+        # 임시 키 제거
+        del group['SOURCES']
+        
+        # 봉투 타입 정렬 (50L이 먼저 오도록)
+        group['BAG_TYPES'].sort()
+        
+        merged_shops.append(group)
 
     # JSON 저장
     shops_data = {
         "updated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "target_areas": list(dong_codes.keys()),
         "target_bags": list(bag_codes.keys()),
-        "total_count": len(unique_shops),
-        "shops": unique_shops
+        "total_count": len(merged_shops),
+        "shops": merged_shops
     }
 
     with open('shops.json', 'w', encoding='utf-8') as f:
         json.dump(shops_data, f, ensure_ascii=False, indent=2)
 
-    print(f"\n총 {len(unique_shops)}개 판매점 저장 완료")
+    print(f"\n총 {len(merged_shops)}개 판매점 저장 완료")
+    print(f"- 50L만: {len([s for s in merged_shops if s['BAG_TYPES'] == ['소각용 50L']])}개")
+    print(f"- 75L만: {len([s for s in merged_shops if s['BAG_TYPES'] == ['소각용 75L']])}개")
+    print(f"- 둘 다: {len([s for s in merged_shops if len(s['BAG_TYPES']) == 2])}개")
     return 0
 
 if __name__ == "__main__":
