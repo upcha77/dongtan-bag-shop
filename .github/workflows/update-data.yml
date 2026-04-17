@@ -136,10 +136,10 @@ with open('public/shops.json', 'w', encoding='utf-8') as f:
 print(f"\n총 {len(unique_shops)}개 판매점 저장 완료")
 EOF
 
-    - name: Deploy to Firebase
+    - name: Deploy to Firebase (dongtan-bag-shop)
       uses: w9jds/firebase-action@master
       with:
-        args: deploy --only hosting
+        args: deploy --only hosting --project dongtan-bag-shop
       env:
         FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
         
